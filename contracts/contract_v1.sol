@@ -4,7 +4,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@1001-digital/erc721-extensions/contracts/RandomlyAssigned.sol";
 
-contract NFT is is ERC721, Ownable, RandomlyAssigned {
+contract NFT is ERC721, Ownable, RandomlyAssigned {
     using Strings for uint256;
 
     string public baseURI;
@@ -25,8 +25,9 @@ contract NFT is is ERC721, Ownable, RandomlyAssigned {
         string memory _name,
         string memory _symbol,
         string memory _initBaseURI
-    ) ERC721(_name, _symbol) {
-        RandomlyAssigned(10000,1)
+    ) ERC721(_name, _symbol) 
+    RandomlyAssigned(10000,1)
+    {
         setBaseURI(_initBaseURI);
         mint(msg.sender, 20); // mint 20 tokens when publishing the contract, remove otherwise
     }
@@ -38,11 +39,11 @@ contract NFT is is ERC721, Ownable, RandomlyAssigned {
 
     // public
     function mint(address _to, uint256 _mintAmount) public payable {
-        uint256 supply = totalSupply();
         require(!paused, "Sale must be active");
         require(_mintAmount > 0, "At least 1 token needs to be minted");
         require(_mintAmount <= maxMintAmount, "Cannot mint more than 20 token at a time");
-        require(supply + _mintAmount <= maxSupply, "Purchase would exceed max amount of tokens");
+        require(tokenCount() + _mintAmount <= totalSupply(), "Purchase would exceed max amount of tokens");
+        require(availableTokenCount() - _mintAmount >= 0, "Cannot mint more than the available token count");
 
         if (msg.sender != owner()) {
             if(whitelisted[msg.sender] != true) {
@@ -54,19 +55,6 @@ contract NFT is is ERC721, Ownable, RandomlyAssigned {
             uint256 id = nextToken();
             _safeMint(_to, id);
         }
-    }
-
-    function walletOfOwner(address _owner)
-        public
-        view
-        returns (uint256[] memory)
-    {
-        uint256 ownerTokenCount = balanceOf(_owner);
-        uint256[] memory tokenIds = new uint256[](ownerTokenCount);
-        for (uint256 i; i < ownerTokenCount; i++) {
-        tokenIds[i] = tokenOfOwnerByIndex(_owner, i);
-        }
-        return tokenIds;
     }
 
     // return metadata location for speciifed Id
