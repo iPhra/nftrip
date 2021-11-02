@@ -142,8 +142,8 @@ if __name__ == "__main__":
     # sorted so that the ones on the top are more likely to be changed than the ones on the bottom
     #
     parser = argparse.ArgumentParser()
-    parser.add_argument("--content_img_name", type=str, help="content image name", default='figures.jpg')
-    parser.add_argument("--style_img_name", type=str, help="style image name", default='vg_starry_night.jpg')
+    parser.add_argument("--content_img_name", type=str, help="content image name", default='mona_lisa.jpeg')
+    parser.add_argument("--style_img_name", type=str, help="style image name", default='vg_starry_night_resized.jpg')
     parser.add_argument("--height", type=int, nargs='+', help="height of content and style images", default=400)
 
     parser.add_argument("--content_weight", type=float, help="weight factor for content loss", default=1e5)
