@@ -4,6 +4,8 @@ from utils.video_utils import create_video_from_intermediate_results
 import torch
 from torch.optim import Adam, LBFGS
 from torch.autograd import Variable
+from pathlib import Path
+import shutil
 import numpy as np
 import os
 import argparse
@@ -48,17 +50,17 @@ def make_tuning_step(neural_net, optimizer, target_representations, content_feat
 
 
 def neural_style_transfer(config):
-    content_img_path = os.path.join(config['content_images_dir'], config['content_img_name'])
-    style_img_path = os.path.join(config['style_images_dir'], config['style_img_name'])
+    content_img_path = config['content_images_dir'] / config['content_img_name']
+    style_img_path = config['style_images_dir'] / config['style_img_name']
 
     out_dir_name = 'combined_' + os.path.split(content_img_path)[1].split('.')[0] + '_' + os.path.split(style_img_path)[1].split('.')[0]
-    dump_path = os.path.join(config['output_img_dir'], out_dir_name)
-    os.makedirs(dump_path, exist_ok=True)
+    dump_path = config['output_img_dir'] / out_dir_name
+    dump_path.mkdir(exist_ok=True, parents=True)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    content_img = utils.prepare_img(content_img_path, config['height'], device)
-    style_img = utils.prepare_img(style_img_path, config['height'], device)
+    content_img = utils.prepare_img(str(content_img_path), config['height'], device)
+    style_img = utils.prepare_img(str(style_img_path), config['height'], device)
 
     if config['init_method'] == 'random':
         # white_noise_img = np.random.uniform(-90., 90., content_img.shape).astype(np.float32)
@@ -87,7 +89,7 @@ def neural_style_transfer(config):
 
     # magic numbers in general are a big no no - some things in this code are left like this by design to avoid clutter
     num_of_iterations = {
-        "lbfgs": 1000,
+        "lbfgs": 1, #1000,
         "adam": 3000,
     }
 
@@ -126,15 +128,36 @@ def neural_style_transfer(config):
     return dump_path
 
 
+def copy_output(optimization_config, results_path):
+    optimization_config['images_path'].mkdir(exist_ok=True, parents=True)
+    optimization_config['videos_path'].mkdir(exist_ok=True, parents=True)
+
+    source_img_filename = sorted(list(results_path.glob('*.jpg')))[-1]
+    print(f'Copying {source_img_filename}')
+    destination_img_file = optimization_config['images_path'] / (optimization_config['output_img_name'] + '.jpg')
+    shutil.copy(source_img_filename, destination_img_file)
+
+    try:
+        source_video_filename = list(results_path.glob('*.mp4'))[0]
+        destination_video_file = optimization_config['videos_path'] / (optimization_config['output_img_name'] + '.mp4')
+        shutil.copy(source_video_filename, destination_video_file)
+    except:
+        print('No video generated, skipping..')
+
+
+
 if __name__ == "__main__":
     #
     # fixed args - don't change these unless you have a good reason
     #
     start = time()
-    default_resource_dir = os.path.join(os.path.dirname(__file__), 'data')
-    content_images_dir = os.path.join(default_resource_dir, 'content-images')
-    style_images_dir = os.path.join(default_resource_dir, 'style-images')
-    output_img_dir = os.path.join(default_resource_dir, 'output-images')
+    default_resource_dir = Path(os.path.dirname(__file__)) /  'data'
+    content_images_dir = default_resource_dir / 'content-images'
+    style_images_dir = default_resource_dir / 'style-images'
+    output_img_dir = default_resource_dir / 'output-images'
+    output_path = default_resource_dir / 'output'
+    images_path = output_path / 'images'
+    videos_path = output_path / 'videos'
     img_format = (4, '.jpg')  # saves images in the format: %04d.jpg
 
     #
@@ -144,12 +167,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--content_img_name", type=str, help="content image name", default='mona_lisa.jpeg')
     parser.add_argument("--style_img_name", type=str, help="style image name", default='vg_starry_night_resized.jpg')
+    parser.add_argument("--output_img_name", type=str, help="output image name", default='0.jpg')
     parser.add_argument("--height", type=int, nargs='+', help="height of content and style images", default=400)
 
     parser.add_argument("--content_weight", type=float, help="weight factor for content loss", default=1e5)
     parser.add_argument("--style_weight", type=float, help="weight factor for style loss", default=3e4)
     parser.add_argument("--tv_weight", type=float, help="weight factor for total variation loss", default=1e0)
 
+    parser.add_argument("--video", type=bool, help="whether to generate a video", default=False)
     parser.add_argument("--optimizer", type=str, choices=['lbfgs', 'adam'], default='lbfgs')
     parser.add_argument("--model", type=str, choices=['vgg16', 'vgg19'], default='vgg19')
     parser.add_argument("--init_method", type=str, choices=['random', 'content', 'style'], default='content')
@@ -174,11 +199,18 @@ if __name__ == "__main__":
     optimization_config['content_images_dir'] = content_images_dir
     optimization_config['style_images_dir'] = style_images_dir
     optimization_config['output_img_dir'] = output_img_dir
+    optimization_config['images_path'] = images_path
+    optimization_config['videos_path'] = videos_path
     optimization_config['img_format'] = img_format
 
     # original NST (Neural Style Transfer) algorithm (Gatys et al.)
     results_path = neural_style_transfer(optimization_config)
 
     # uncomment this if you want to create a video from images dumped during the optimization procedure
-    create_video_from_intermediate_results(results_path, img_format)
+    if args.video:
+        create_video_from_intermediate_results(results_path, img_format)
+
+    # copy results to the respective folder
+    copy_output(optimization_config, results_path)
+
     print(f'Time elapsed: {time()-start}')
