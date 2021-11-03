@@ -19,7 +19,7 @@ def create_video_from_intermediate_results(results_path, img_format):
         out_video_path = os.path.join(results_path, out_file_name)
 
         trim_video_command = ['-start_number', str(first_frame), '-vframes', str(number_of_frames_to_process)]
-        input_options = ['-r', str(fps), '-i', pattern]
+        input_options = ['-r', str(fps), '-i', pattern, '-y']
         encoding_options = ['-c:v', 'libx264', '-crf', '25', '-pix_fmt', 'yuv420p']
         subprocess.call([ffmpeg, *input_options, *trim_video_command, *encoding_options, out_video_path])
     else:

@@ -9,6 +9,7 @@ import shutil
 import numpy as np
 import os
 import argparse
+import ast
 from time import time
 
 
@@ -174,7 +175,7 @@ if __name__ == "__main__":
     parser.add_argument("--style_weight", type=float, help="weight factor for style loss", default=3e4)
     parser.add_argument("--tv_weight", type=float, help="weight factor for total variation loss", default=1e0)
 
-    parser.add_argument("--video", type=bool, help="whether to generate a video", default=False)
+    parser.add_argument("--video", type=str, help="whether to generate a video", default="False")
     parser.add_argument("--optimizer", type=str, choices=['lbfgs', 'adam'], default='lbfgs')
     parser.add_argument("--model", type=str, choices=['vgg16', 'vgg19'], default='vgg19')
     parser.add_argument("--init_method", type=str, choices=['random', 'content', 'style'], default='content')
@@ -207,7 +208,7 @@ if __name__ == "__main__":
     results_path = neural_style_transfer(optimization_config)
 
     # uncomment this if you want to create a video from images dumped during the optimization procedure
-    if args.video:
+    if ast.literal_eval(args.video):
         create_video_from_intermediate_results(results_path, img_format)
 
     # copy results to the respective folder
