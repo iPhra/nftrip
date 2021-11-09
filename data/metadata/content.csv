@@ -1,4 +1,4 @@
-Title,Author,Orientation,Resolution,File name,Notes
+Title,Author,Orientation,Resolution,File_name,Notes
 Mona Lisa,Leonardo Da Vinci,Portrait,1024x1526,mona_lisa.jpeg,
 The Last Supper,Leonardo Da Vinci,Landscape,1200x600,last_supper.jpeg,
 Persistence Of Memory,Salvador Dalì,Landscape,1668 × 1200,persistence_of_the_memory.jpg,
@@ -6,3 +6,28 @@ The Birth Of Venus,Sandro Botticelli,Landscape,1200 x 754,the_birth_of_venus.jpg
 The Dance,Henri Matisse,Landscape,2348 × 1587,the_dance.jpg,
 The Kiss,Gustav Klimt,Portrait,1105 × 1123,the_kiss.jpg,(Can be cropped easily)
 Vitruvian Man,Leonardo Da Vinci,Portrait,1020 × 680,vitruvian_man.jpg,
+Sunflowers,Vincent Van Gogh,Portrait,1280 × 1682,sunflowers.jpg,
+The Scream,Edvard Munch,Portrait,1280 × 1589,the_scream.jpg,
+Lady With An Ermin,Leonardo Da Vinci,Portrait,1200 × 1614,lady_with_an_ermine.jpg,
+Le Serment Des Horaces,Jacques-Louis David,Landscape,2332 × 1797,le_serment_des_horaces.jpg,
+Le Déjeuner Sur L'herbe,Claude Monet,Landscape,1642 × 1294,le_déjeuner_sur_l'herbe,
+The Lighthouse at Honfleur,Georges Seurat,Landscape,4096 × 3333,the_lighthouse_at_honfleur.jpg,
+Cape cod Evening,Edward Hopper,Landscape,4096 × 3072,cape_cod_evening.jpg,
+Girl with a Pearl Earring,Johannes Vermeer,Portrait,12285x14550,girl_with_a_pearl_earring.jpg,Content
+Primavera,Sandro Botticelli,Landscape,4926x3236,primavera.jpg,Content
+Maja Desnuda,Francisco Goya,Landscape,4724x2396,maja_desnuda.jpg,Content
+Le Grand Odalisque,Ingres,Landscape,2200x1225,le_grand_odalisque.jpg,Content
+Las Meninas,Velazquez,Portrait,26065x30000,las_meninas.jpg,Content
+Liberty Leading The People,Eugène Delacroix,Landscape,,,
+Arrangement in Grey and Black No. 1,James McNeill Whistler,Landscape,1200 × 1068,arrangement_in_grey_and_black_no1.jpg,almost 1:1 ratio
+Café Terrace at Night,Vincent Van Gogh,Portrait,2348 × 2945,café_terrace_at_night.jpg,
+Les Demoiselles d'Avignon,Pablo Picasso,Portrait,2292 × 2393,les_demoiselles_davignon.jpg,almost 1:1 ratio
+The Raft of the Medusa,Théodore Géricault,Landscape,5872 × 4008,the_raft_of_the_medusa.jpg,
+The Night Café,Vincent Van Gogh,Landscape,3000 × 2368,the_night_café.jpg,
+Composition VIII,Vasilij Kandinskij,Landscape,1090 × 755,composition_viii.jpg,
+Self-portrait,Vincent Van Gogh,Portrait,827 × 1026,self_portrait.jpg,
+Wanderer above a sea of mist,Caspar David Friedrich,Portrait,2327 x 2980,wanderer_above_a_sea_of_mist.jpg,
+Madonna di Senigallia,Piero Della Francesca,Portrait,1200 x 1411,madonna_di_senigallia.jpg,
+Arnolfini Portrait,Van Eyck,Portrait,3087 x 4226,arnolfini_portrait.PJT,
+Federico Da Montefeltro,Piero Della Francesca,Portrait,703 x 997,federico_da_montefeltro.jpg,
+Battista Sforza,Piero Della Francesca,Portrait,706 x 1010,battista_sforza.jpg,
