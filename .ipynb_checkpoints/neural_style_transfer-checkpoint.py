@@ -90,7 +90,7 @@ def neural_style_transfer(config):
 
     # magic numbers in general are a big no no - some things in this code are left like this by design to avoid clutter
     num_of_iterations = {
-        "lbfgs": 1000, #1000,
+        "lbfgs": 1, #1000,
         "adam": 3000,
     }
 
@@ -156,9 +156,6 @@ if __name__ == "__main__":
     content_images_dir = default_resource_dir / 'content-images'
     style_images_dir = default_resource_dir / 'style-images'
     output_img_dir = default_resource_dir / 'output-images'
-    output_path = default_resource_dir / 'output'
-    images_path = output_path / 'images'
-    videos_path = output_path / 'videos'
     img_format = (4, '.jpg')  # saves images in the format: %04d.jpg
 
     #
@@ -169,6 +166,7 @@ if __name__ == "__main__":
     parser.add_argument("--content_img_name", type=str, help="content image name", default='mona_lisa.jpeg')
     parser.add_argument("--style_img_name", type=str, help="style image name", default='vg_starry_night_resized.jpg')
     parser.add_argument("--output_img_name", type=str, help="output image name", default='0.jpg')
+    parser.add_argument("--output_path", type=str, help='output path', default='output')
     parser.add_argument("--height", type=int, nargs='+', help="height of content and style images", default=400)
 
     parser.add_argument("--content_weight", type=float, help="weight factor for content loss", default=1e5)
@@ -192,6 +190,10 @@ if __name__ == "__main__":
     # adam, content init -> (cw, sw, tv, lr) = (1e5, 1e5, 1e-1, 1e1)
     # adam, style   init -> (cw, sw, tv, lr) = (1e5, 1e2, 1e-1, 1e1)
     # adam, random  init -> (cw, sw, tv, lr) = (1e5, 1e2, 1e-1, 1e1)
+    
+    output_path = default_resource_dir / args.output_path
+    images_path = output_path / 'images'
+    videos_path = output_path / 'videos'
 
     # just wrapping settings into a dictionary
     optimization_config = dict()
