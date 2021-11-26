@@ -1,11 +1,10 @@
 output-images/*
 output-images
 __pycache__
-__pycache__/*
 ipynb_checkpoints
-ipynb_checkpoints/*
 output/
 output/*
 data/
 data/*
-*.DS_Store
+DS_Store
+checkpoint

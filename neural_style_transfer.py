@@ -1,5 +1,5 @@
 import utils.utils as utils
-from utils.video_utils import create_video_from_intermediate_results
+from utils.video_utils import create_video_from_intermediate_results, copy_images
 
 import torch
 from torch.optim import Adam, LBFGS
@@ -90,7 +90,7 @@ def neural_style_transfer(config):
 
     # magic numbers in general are a big no no - some things in this code are left like this by design to avoid clutter
     num_of_iterations = {
-        "lbfgs": 1000, #1000,
+        "lbfgs": 15, #1000,
         "adam": 3000,
     }
 
@@ -139,8 +139,8 @@ def copy_output(optimization_config, results_path):
     shutil.copy(source_img_filename, destination_img_file)
 
     try:
-        source_video_filename = list(results_path.glob('*.mp4'))[0]
-        destination_video_file = optimization_config['videos_path'] / (optimization_config['output_img_name'] + '.mp4')
+        source_video_filename = list(results_path.glob('*.gif'))[0]
+        destination_video_file = optimization_config['videos_path'] / (optimization_config['output_img_name'] + '.gif')
         shutil.copy(source_video_filename, destination_video_file)
     except:
         print('No video generated, skipping..')
@@ -164,10 +164,10 @@ if __name__ == "__main__":
     #
     parser = argparse.ArgumentParser()
     parser.add_argument("--content_img_name", type=str, help="content image name", default='mona_lisa.jpeg')
-    parser.add_argument("--style_img_name", type=str, help="style image name", default='vg_starry_night_resized.jpg')
+    parser.add_argument("--style_img_name", type=str, help="style image name", default='edtaonisl.jpg')
     parser.add_argument("--output_img_name", type=str, help="output image name", default='0.jpg')
     parser.add_argument("--output_path", type=str, help='output path', default='output')
-    parser.add_argument("--height", type=int, nargs='+', help="height of content and style images", default=400)
+    parser.add_argument("--height", type=int, nargs='+', help="height of content and style images", default=500)
 
     parser.add_argument("--content_weight", type=float, help="weight factor for content loss", default=1e5)
     parser.add_argument("--style_weight", type=float, help="weight factor for style loss", default=3e4)
@@ -211,6 +211,7 @@ if __name__ == "__main__":
 
     # uncomment this if you want to create a video from images dumped during the optimization procedure
     if ast.literal_eval(args.video):
+        results_path = copy_images(results_path)
         create_video_from_intermediate_results(results_path, img_format)
 
     # copy results to the respective folder
