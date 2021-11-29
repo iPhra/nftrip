@@ -21,7 +21,7 @@ def copy_images(results_path):
         to_keep += [results[i]]
 
     to_keep += [to_keep[-1]]*10
-    to_keep = to_keep + to_keep[::-1] + to_keep
+    to_keep = to_keep + to_keep[::-1]
 
     for i, file in enumerate(to_keep):
         new_name = f'{i:04d}'
