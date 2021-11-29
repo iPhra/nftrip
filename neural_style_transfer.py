@@ -90,7 +90,7 @@ def neural_style_transfer(config):
 
     # magic numbers in general are a big no no - some things in this code are left like this by design to avoid clutter
     num_of_iterations = {
-        "lbfgs": 15, #1000,
+        "lbfgs": 1000, #1000,
         "adam": 3000,
     }
 
@@ -132,15 +132,16 @@ def neural_style_transfer(config):
 def copy_output(optimization_config, results_path):
     optimization_config['images_path'].mkdir(exist_ok=True, parents=True)
     optimization_config['videos_path'].mkdir(exist_ok=True, parents=True)
+    destination_filename = optimization_config['output_img_name'].split('.')[0]
 
     source_img_filename = sorted(list(results_path.glob('*.jpg')))[-1]
     print(f'Copying {source_img_filename}')
-    destination_img_file = optimization_config['images_path'] / (optimization_config['output_img_name'] + '.jpg')
+    destination_img_file = optimization_config['images_path'] / (destination_filename + '.jpg')
     shutil.copy(source_img_filename, destination_img_file)
 
     try:
         source_video_filename = list(results_path.glob('*.gif'))[0]
-        destination_video_file = optimization_config['videos_path'] / (optimization_config['output_img_name'] + '.gif')
+        destination_video_file = optimization_config['videos_path'] / (destination_filename + '.gif')
         shutil.copy(source_video_filename, destination_video_file)
     except:
         print('No video generated, skipping..')
