@@ -11,6 +11,18 @@ import os
 import argparse
 import ast
 from time import time
+import logging
+from datetime import datetime
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler(f'logs/log-{datetime.now().strftime("%d_%m_%Y")}.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
 
 def build_loss(neural_net, optimizing_img, target_representations, content_feature_maps_index, style_feature_maps_indices, config):
@@ -51,14 +63,18 @@ def make_tuning_step(neural_net, optimizer, target_representations, content_feat
 
 
 def neural_style_transfer(config):
+    logger.info('Starting training..')
+
     content_img_path = config['content_images_dir'] / config['content_img_name']
     style_img_path = config['style_images_dir'] / config['style_img_name']
 
     out_dir_name = 'combined_' + os.path.split(content_img_path)[1].split('.')[0] + '_' + os.path.split(style_img_path)[1].split('.')[0]
     dump_path = config['output_img_dir'] / out_dir_name
     dump_path.mkdir(exist_ok=True, parents=True)
+    [f.unlink() for f in dump_path.glob('*') if f.is_file()]  # remove all files in the folder
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    logger.debug(f'Using device {device} for training')
 
     content_img = utils.prepare_img(str(content_img_path), config['height'], device)
     style_img = utils.prepare_img(str(style_img_path), config['height'], device)
@@ -79,7 +95,7 @@ def neural_style_transfer(config):
     optimizing_img = Variable(init_img, requires_grad=True)
 
     neural_net, content_feature_maps_index_name, style_feature_maps_indices_names = utils.prepare_model(config['model'], device)
-    print(f'Using {config["model"]} in the optimization procedure.')
+    logger.debug(f'Using {config["model"]} in the optimization procedure')
 
     content_img_set_of_feature_maps = neural_net(content_img)
     style_img_set_of_feature_maps = neural_net(style_img)
@@ -90,7 +106,7 @@ def neural_style_transfer(config):
 
     # magic numbers in general are a big no no - some things in this code are left like this by design to avoid clutter
     num_of_iterations = {
-        "lbfgs": 1000, #1000,
+        "lbfgs": 10, #1000,
         "adam": 3000,
     }
 
@@ -103,7 +119,7 @@ def neural_style_transfer(config):
         for cnt in range(num_of_iterations[config['optimizer']]):
             total_loss, content_loss, style_loss, tv_loss = tuning_step(optimizing_img)
             with torch.no_grad():
-                print(f'Adam | iteration: {cnt:03}, total loss={total_loss.item():12.4f}, content_loss={config["content_weight"] * content_loss.item():12.4f}, style loss={config["style_weight"] * style_loss.item():12.4f}, tv loss={config["tv_weight"] * tv_loss.item():12.4f}')
+                logger.debug(f'Adam | iteration: {cnt:03}, total loss={total_loss.item():12.4f}, content_loss={config["content_weight"] * content_loss.item():12.4f}, style loss={config["style_weight"] * style_loss.item():12.4f}, tv loss={config["tv_weight"] * tv_loss.item():12.4f}')
                 utils.save_and_maybe_display(optimizing_img, dump_path, config, cnt, num_of_iterations[config['optimizer']], should_display=False)
     elif config['optimizer'] == 'lbfgs':
         # line_search_fn does not seem to have significant impact on result
@@ -118,7 +134,7 @@ def neural_style_transfer(config):
             if total_loss.requires_grad:
                 total_loss.backward()
             with torch.no_grad():
-                print(f'L-BFGS | iteration: {cnt:03}, total loss={total_loss.item():12.4f}, content_loss={config["content_weight"] * content_loss.item():12.4f}, style loss={config["style_weight"] * style_loss.item():12.4f}, tv loss={config["tv_weight"] * tv_loss.item():12.4f}')
+                logger.debug(f'L-BFGS | iteration: {cnt:03}, total loss={total_loss.item():12.4f}, content_loss={config["content_weight"] * content_loss.item():12.4f}, style loss={config["style_weight"] * style_loss.item():12.4f}, tv loss={config["tv_weight"] * tv_loss.item():12.4f}')
                 utils.save_and_maybe_display(optimizing_img, dump_path, config, cnt, num_of_iterations[config['optimizer']], should_display=False)
 
             cnt += 1
@@ -126,25 +142,27 @@ def neural_style_transfer(config):
 
         optimizer.step(closure)
 
+    logger.info('Training finished')
     return dump_path
 
 
-def copy_output(optimization_config, results_path):
+def copy_output(optimization_config, images_path, videos_path):
     optimization_config['images_path'].mkdir(exist_ok=True, parents=True)
     optimization_config['videos_path'].mkdir(exist_ok=True, parents=True)
     destination_filename = optimization_config['output_img_name'].split('.')[0]
 
-    source_img_filename = sorted(list(results_path.glob('*.jpg')))[-1]
-    print(f'Copying {source_img_filename}')
+    source_img_filename = sorted(list(images_path.glob('*.jpg')))[-1]
+    logger.info(f'Copying {source_img_filename}')
     destination_img_file = optimization_config['images_path'] / (destination_filename + '.jpg')
     shutil.copy(source_img_filename, destination_img_file)
 
     try:
-        source_video_filename = list(results_path.glob('*.gif'))[0]
+        source_video_filename = list(videos_path.glob('*.gif'))[0]
+        logger.info(f'Copying {source_video_filename}')
         destination_video_file = optimization_config['videos_path'] / (destination_filename + '.gif')
         shutil.copy(source_video_filename, destination_video_file)
     except:
-        print('No video generated, skipping..')
+        logger.info('No video generated, skipping..')
 
 
 
@@ -207,15 +225,17 @@ if __name__ == "__main__":
     optimization_config['videos_path'] = videos_path
     optimization_config['img_format'] = img_format
 
+    logger.debug(optimization_config)
+
     # original NST (Neural Style Transfer) algorithm (Gatys et al.)
-    results_path = neural_style_transfer(optimization_config)
+    images_path = neural_style_transfer(optimization_config)
 
     # uncomment this if you want to create a video from images dumped during the optimization procedure
     if ast.literal_eval(args.video):
-        results_path = copy_images(results_path)
-        create_video_from_intermediate_results(results_path, img_format)
+        videos_path = copy_images(images_path)
+        create_video_from_intermediate_results(videos_path, img_format)
 
     # copy results to the respective folder
-    copy_output(optimization_config, results_path)
+    copy_output(optimization_config, images_path, videos_path)
 
-    print(f'Time elapsed: {time()-start}')
+    logger.info(f'Time elapsed: {time()-start}')

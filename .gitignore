@@ -8,3 +8,4 @@ data/
 data/*
 .DS_Store
 checkpoint
+logs/*

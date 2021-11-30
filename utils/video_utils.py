@@ -1,6 +1,9 @@
 import os
 import subprocess
 from shutil import copyfile
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def copy_images(results_path):
@@ -9,6 +12,7 @@ def copy_images(results_path):
 
     new_folder = results_path.parent / (results_path.name + '_new')
     new_folder.mkdir(exist_ok=True, parents=True)
+    [f.unlink() for f in new_folder.glob('*') if f.is_file()]  # remove all files in the folder
 
     to_keep = []
     for i in range(10):
@@ -23,6 +27,7 @@ def copy_images(results_path):
     to_keep += [to_keep[-1]]*10
     to_keep = to_keep + to_keep[::-1]
 
+    logger.info('Copying images to destination folder for video creation..')
     for i, file in enumerate(to_keep):
         new_name = f'{i:04d}'
         copyfile(file, new_folder/f'{new_name}.jpg')
@@ -47,16 +52,16 @@ def create_video_from_intermediate_results(results_path, img_format):
         pattern = os.path.join(results_path, img_name_format)
         out_video_path = os.path.join(results_path, out_file_name)
 
-        print('Creating video..')
+        logger.info('Creating video..')
         trim_video_command = ['-start_number', str(first_frame), '-vframes', str(number_of_frames_to_process)]
         input_options = ['-r', str(fps), '-i', pattern, '-y']
         encoding_options = ['-c:v', 'libx264', '-crf', '25', '-pix_fmt', 'yuv420p', '-vf', "pad=ceil(iw/2)*2:ceil(ih/2)*2"]
         subprocess.call([ffmpeg, *input_options, *trim_video_command, *encoding_options, out_video_path])
 
-        print('Creating gif..')
+        logger.info('Creating gif..')
         output_gif_path = results_path / 'out.gif'
-        input_options = ['-ss', "1", '-t', '10', '-i', out_video_path, '-vf', 'fps=30,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse', '-loop', '0', str(output_gif_path)]
+        input_options = ['-t', '10', '-i', out_video_path, '-y', '-vf', 'fps=30,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse', '-loop', '0', str(output_gif_path)]
         subprocess.call([ffmpeg, *input_options])
     else:
-        print(f'{ffmpeg} not found in the system path, aborting.')
+        logger.exception(f'{ffmpeg} not found in the system path, aborting.')
 
