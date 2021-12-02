@@ -1,7 +1,7 @@
 output-images/*
 output-images
 __pycache__
-ipynb_checkpoints
+.ipynb_checkpoints
 output/
 output/*
 data/

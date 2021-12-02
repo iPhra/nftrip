@@ -1,5 +1,4 @@
 import utils.utils as utils
-from utils.video_utils import create_video_from_intermediate_results, copy_images
 
 import torch
 from torch.optim import Adam, LBFGS
@@ -9,10 +8,11 @@ import shutil
 import numpy as np
 import os
 import argparse
-import ast
 from time import time
 import logging
 from datetime import datetime
+import imageio
+from PIL import Image
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -106,7 +106,7 @@ def neural_style_transfer(config):
 
     # magic numbers in general are a big no no - some things in this code are left like this by design to avoid clutter
     num_of_iterations = {
-        "lbfgs": 10, #1000,
+        "lbfgs": 30, #1000,
         "adam": 3000,
     }
 
@@ -146,23 +146,45 @@ def neural_style_transfer(config):
     return dump_path
 
 
-def copy_output(optimization_config, images_path, videos_path):
+def make_gif(config, results_path):
+    logger.info('Creating gif..')
+
+    results = list(sorted(results_path.glob('*.jpg')))[-1]
+    transf = Image.open(results)
+    
+    content_img_path = config['content_images_dir'] / config['content_img_name']
+    orig = Image.open(content_img_path)
+    orig = orig.resize((transf.width,transf.height), Image.ANTIALIAS)
+
+    images = []
+    for i in range(0, 255, 10):
+        orig_new = orig.copy()
+        orig_new.putalpha(255-i)
+
+        transf_new = transf.copy()
+        transf_new.putalpha(i)
+
+        new = Image.alpha_composite(orig_new, transf_new)
+        images.append(new)
+
+    images = images + images[::-1]
+    imageio.mimsave(f'{results_path}/out.gif', images, duration=0.01)
+
+
+def copy_output(optimization_config, results_path):
     optimization_config['images_path'].mkdir(exist_ok=True, parents=True)
-    optimization_config['videos_path'].mkdir(exist_ok=True, parents=True)
+    optimization_config['gifs_path'].mkdir(exist_ok=True, parents=True)
     destination_filename = optimization_config['output_img_name'].split('.')[0]
 
-    source_img_filename = sorted(list(images_path.glob('*.jpg')))[-1]
+    source_img_filename = sorted(list(results_path.glob('*.jpg')))[-1]
     logger.info(f'Copying {source_img_filename}')
     destination_img_file = optimization_config['images_path'] / (destination_filename + '.jpg')
     shutil.copy(source_img_filename, destination_img_file)
 
-    try:
-        source_video_filename = list(videos_path.glob('*.gif'))[0]
-        logger.info(f'Copying {source_video_filename}')
-        destination_video_file = optimization_config['videos_path'] / (destination_filename + '.gif')
-        shutil.copy(source_video_filename, destination_video_file)
-    except:
-        logger.info('No video generated, skipping..')
+    source_gif_filename = list(results_path.glob('*.gif'))[0]
+    logger.info(f'Copying {source_gif_filename}')
+    destination_video_file = optimization_config['gifs_path'] / (destination_filename + '.gif')
+    shutil.copy(source_gif_filename, destination_video_file)
 
 
 
@@ -184,35 +206,23 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--content_img_name", type=str, help="content image name", default='mona_lisa.jpeg')
     parser.add_argument("--style_img_name", type=str, help="style image name", default='edtaonisl.jpg')
-    parser.add_argument("--output_img_name", type=str, help="output image name", default='0.jpg')
+    parser.add_argument("--output_img_name", type=str, help="output image name", default='1.jpg')
     parser.add_argument("--output_path", type=str, help='output path', default='output')
-    parser.add_argument("--height", type=int, nargs='+', help="height of content and style images", default=500)
+    parser.add_argument("--height", type=int, nargs='+', help="height of content and style images", default=700)
 
     parser.add_argument("--content_weight", type=float, help="weight factor for content loss", default=1e5)
     parser.add_argument("--style_weight", type=float, help="weight factor for style loss", default=3e4)
     parser.add_argument("--tv_weight", type=float, help="weight factor for total variation loss", default=1e0)
 
-    parser.add_argument("--video", type=str, help="whether to generate a video", default="False")
     parser.add_argument("--optimizer", type=str, choices=['lbfgs', 'adam'], default='lbfgs')
     parser.add_argument("--model", type=str, choices=['vgg16', 'vgg19'], default='vgg19')
     parser.add_argument("--init_method", type=str, choices=['random', 'content', 'style'], default='content')
-    parser.add_argument("--saving_freq", type=int, help="saving frequency for intermediate images (-1 means only final)", default=1)
+    parser.add_argument("--saving_freq", type=int, help="saving frequency for intermediate images (-1 means only final)", default=-1)
     args = parser.parse_args()
-
-    # some values of weights that worked for figures.jpg, vg_starry_night.jpg (starting point for finding good images)
-    # once you understand what each one does it gets really easy -> also see README.md
-
-    # lbfgs, content init -> (cw, sw, tv) = (1e5, 3e4, 1e0)
-    # lbfgs, style   init -> (cw, sw, tv) = (1e5, 1e1, 1e-1)
-    # lbfgs, random  init -> (cw, sw, tv) = (1e5, 1e3, 1e0)
-
-    # adam, content init -> (cw, sw, tv, lr) = (1e5, 1e5, 1e-1, 1e1)
-    # adam, style   init -> (cw, sw, tv, lr) = (1e5, 1e2, 1e-1, 1e1)
-    # adam, random  init -> (cw, sw, tv, lr) = (1e5, 1e2, 1e-1, 1e1)
     
     output_path = default_resource_dir / args.output_path
     images_path = output_path / 'images'
-    videos_path = output_path / 'videos'
+    gif_path = output_path / 'gifs'
 
     # just wrapping settings into a dictionary
     optimization_config = dict()
@@ -222,7 +232,7 @@ if __name__ == "__main__":
     optimization_config['style_images_dir'] = style_images_dir
     optimization_config['output_img_dir'] = output_img_dir
     optimization_config['images_path'] = images_path
-    optimization_config['videos_path'] = videos_path
+    optimization_config['gifs_path'] = gif_path
     optimization_config['img_format'] = img_format
 
     logger.debug(optimization_config)
@@ -230,12 +240,9 @@ if __name__ == "__main__":
     # original NST (Neural Style Transfer) algorithm (Gatys et al.)
     images_path = neural_style_transfer(optimization_config)
 
-    # uncomment this if you want to create a video from images dumped during the optimization procedure
-    if ast.literal_eval(args.video):
-        videos_path = copy_images(images_path)
-        create_video_from_intermediate_results(videos_path, img_format)
+    make_gif(optimization_config, images_path)
 
     # copy results to the respective folder
-    copy_output(optimization_config, images_path, videos_path)
+    copy_output(optimization_config, images_path)
 
     logger.info(f'Time elapsed: {time()-start}')
