@@ -5,7 +5,7 @@ import argparse
 
 from neural_style_transfer import main
 
-WEIGHTS = [5e2, 5e4, 5e7]
+WEIGHTS = [5e2, 5e4]
 
 
 def cartesian_product(d):
