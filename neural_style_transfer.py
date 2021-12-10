@@ -106,41 +106,50 @@ def neural_style_transfer(config):
 
     # magic numbers in general are a big no no - some things in this code are left like this by design to avoid clutter
     num_of_iterations = {
-        "lbfgs": 30, #1000,
-        "adam": 3000,
+        "lbfgs": 1000, #1000,
+        "adam": 1000,
     }
 
     #
     # Start of optimization procedure
     #
+    unsuccessful=False
     if config['optimizer'] == 'adam':
         optimizer = Adam((optimizing_img,), lr=1e1)
         tuning_step = make_tuning_step(neural_net, optimizer, target_representations, content_feature_maps_index_name[0], style_feature_maps_indices_names[0], config)
         for cnt in range(num_of_iterations[config['optimizer']]):
             total_loss, content_loss, style_loss, tv_loss = tuning_step(optimizing_img)
             with torch.no_grad():
-                logger.debug(f'Adam | iteration: {cnt:03}, total loss={total_loss.item():12.4f}, content_loss={config["content_weight"] * content_loss.item():12.4f}, style loss={config["style_weight"] * style_loss.item():12.4f}, tv loss={config["tv_weight"] * tv_loss.item():12.4f}')
+                #logger.debug(f'Adam | iteration: {cnt:03}, total loss={total_loss.item():12.4f}, content_loss={config["content_weight"] * content_loss.item():12.4f}, style loss={config["style_weight"] * style_loss.item():12.4f}, tv loss={config["tv_weight"] * tv_loss.item():12.4f}')
                 utils.save_and_maybe_display(optimizing_img, dump_path, config, cnt, num_of_iterations[config['optimizer']], should_display=False)
     elif config['optimizer'] == 'lbfgs':
-        # line_search_fn does not seem to have significant impact on result
-        optimizer = LBFGS((optimizing_img,), max_iter=num_of_iterations['lbfgs'], line_search_fn='strong_wolfe')
-        cnt = 0
+        try:
+            # line_search_fn does not seem to have significant impact on result
+            optimizer = LBFGS((optimizing_img,), max_iter=num_of_iterations['lbfgs'], line_search_fn='strong_wolfe')
+            cnt = 0
 
-        def closure():
-            nonlocal cnt
-            if torch.is_grad_enabled():
-                optimizer.zero_grad()
-            total_loss, content_loss, style_loss, tv_loss = build_loss(neural_net, optimizing_img, target_representations, content_feature_maps_index_name[0], style_feature_maps_indices_names[0], config)
-            if total_loss.requires_grad:
-                total_loss.backward()
-            with torch.no_grad():
-                logger.debug(f'L-BFGS | iteration: {cnt:03}, total loss={total_loss.item():12.4f}, content_loss={config["content_weight"] * content_loss.item():12.4f}, style loss={config["style_weight"] * style_loss.item():12.4f}, tv loss={config["tv_weight"] * tv_loss.item():12.4f}')
-                utils.save_and_maybe_display(optimizing_img, dump_path, config, cnt, num_of_iterations[config['optimizer']], should_display=False)
+            def closure():
+                nonlocal cnt
+                if torch.is_grad_enabled():
+                    optimizer.zero_grad()
+                total_loss, content_loss, style_loss, tv_loss = build_loss(neural_net, optimizing_img, target_representations, content_feature_maps_index_name[0], style_feature_maps_indices_names[0], config)
+                if total_loss.requires_grad:
+                    total_loss.backward()
+                with torch.no_grad():
+                    #logger.debug(f'L-BFGS | iteration: {cnt:03}, total loss={total_loss.item():12.4f}, content_loss={config["content_weight"] * content_loss.item():12.4f}, style loss={config["style_weight"] * style_loss.item():12.4f}, tv loss={config["tv_weight"] * tv_loss.item():12.4f}')
+                    utils.save_and_maybe_display(optimizing_img, dump_path, config, cnt, num_of_iterations[config['optimizer']], should_display=False)
 
-            cnt += 1
-            return total_loss
+                cnt += 1
+                return total_loss
 
-        optimizer.step(closure)
+            optimizer.step(closure)
+        except:
+            unsuccessful = True
+    
+    logger.debug(f'Executed {cnt} iterations')
+    if ((cnt<num_of_iterations['lbfgs']/10) or unsuccessful==True) & (config['optimizer'] == 'lbfgs'):
+        config['optimizer']='adam'
+        return neural_style_transfer(config)
 
     logger.info('Training finished')
     return dump_path
@@ -183,51 +192,25 @@ def copy_output(optimization_config, results_path):
 
     source_gif_filename = list(results_path.glob('*.gif'))[0]
     logger.info(f'Copying {source_gif_filename}')
-    destination_video_file = optimization_config['gifs_path'] / (destination_filename + '.gif')
+    destination_video_file = optimization_config['gifs_path'] / ('g' + destination_filename + '.gif')
+    logger.info(f'Copying to {destination_video_file}')
     shutil.copy(source_gif_filename, destination_video_file)
 
-
-
-if __name__ == "__main__":
-    #
-    # fixed args - don't change these unless you have a good reason
-    #
+    
+def main(optimization_config):
     start = time()
+
     default_resource_dir = Path(os.path.dirname(__file__)) /  'data'
     content_images_dir = default_resource_dir / 'content-images'
     style_images_dir = default_resource_dir / 'style-images'
     output_img_dir = default_resource_dir / 'output-images'
     img_format = (4, '.jpg')  # saves images in the format: %04d.jpg
-
-    #
-    # modifiable args - feel free to play with these (only small subset is exposed by design to avoid cluttering)
-    # sorted so that the ones on the top are more likely to be changed than the ones on the bottom
-    #
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--content_img_name", type=str, help="content image name", default='mona_lisa.jpeg')
-    parser.add_argument("--style_img_name", type=str, help="style image name", default='edtaonisl.jpg')
-    parser.add_argument("--output_img_name", type=str, help="output image name", default='1.jpg')
-    parser.add_argument("--output_path", type=str, help='output path', default='output')
-    parser.add_argument("--height", type=int, nargs='+', help="height of content and style images", default=700)
-
-    parser.add_argument("--content_weight", type=float, help="weight factor for content loss", default=1e5)
-    parser.add_argument("--style_weight", type=float, help="weight factor for style loss", default=3e4)
-    parser.add_argument("--tv_weight", type=float, help="weight factor for total variation loss", default=1e0)
-
-    parser.add_argument("--optimizer", type=str, choices=['lbfgs', 'adam'], default='lbfgs')
-    parser.add_argument("--model", type=str, choices=['vgg16', 'vgg19'], default='vgg19')
-    parser.add_argument("--init_method", type=str, choices=['random', 'content', 'style'], default='content')
-    parser.add_argument("--saving_freq", type=int, help="saving frequency for intermediate images (-1 means only final)", default=-1)
-    args = parser.parse_args()
     
-    output_path = default_resource_dir / args.output_path
+    output_path = default_resource_dir / optimization_config['output_path']
     images_path = output_path / 'images'
     gif_path = output_path / 'gifs'
 
     # just wrapping settings into a dictionary
-    optimization_config = dict()
-    for arg in vars(args):
-        optimization_config[arg] = getattr(args, arg)
     optimization_config['content_images_dir'] = content_images_dir
     optimization_config['style_images_dir'] = style_images_dir
     optimization_config['output_img_dir'] = output_img_dir
@@ -246,3 +229,36 @@ if __name__ == "__main__":
     copy_output(optimization_config, images_path)
 
     logger.info(f'Time elapsed: {time()-start}')
+    
+    return True
+    
+
+
+if __name__ == "__main__":
+    #
+    # modifiable args - feel free to play with these (only small subset is exposed by design to avoid cluttering)
+    # sorted so that the ones on the top are more likely to be changed than the ones on the bottom
+    #
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--content_img_name", type=str, help="content image name", default='mona_lisa.jpeg')
+    parser.add_argument("--style_img_name", type=str, help="style image name", default='mosaic.jpeg')
+    parser.add_argument("--output_img_name", type=str, help="output image name", default='test.jpg')
+    parser.add_argument("--output_path", type=str, help='output path', default='output')
+    parser.add_argument("--height", type=int, nargs='+', help="height of content and style images", default=500)
+
+    parser.add_argument("--content_weight", type=float, help="weight factor for content loss", default=1e5)
+    parser.add_argument("--style_weight", type=float, help="weight factor for style loss", default=6e4)
+    parser.add_argument("--tv_weight", type=float, help="weight factor for total variation loss", default=1e0)
+
+    parser.add_argument("--optimizer", type=str, choices=['lbfgs', 'adam'], default='lbfgs')
+    parser.add_argument("--model", type=str, choices=['vgg16', 'vgg19'], default='vgg19')
+    parser.add_argument("--init_method", type=str, choices=['random', 'content', 'style'], default='content')
+    parser.add_argument("--saving_freq", type=int, help="saving frequency for intermediate images (-1 means only final)", default=-1)
+    args = parser.parse_args()
+    
+    optimization_config = dict()
+    for arg in vars(args):
+        optimization_config[arg] = getattr(args, arg)
+        
+    main(optimization_config)
+    
