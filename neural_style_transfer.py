@@ -14,6 +14,8 @@ from datetime import datetime
 import imageio
 from PIL import Image
 
+logs_folder = Path('logs')
+logs_folder.mkdir(exist_ok=True, parents=True)
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s [%(levelname)s] %(message)s",
