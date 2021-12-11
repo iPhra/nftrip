@@ -66,9 +66,7 @@ def run(pc_number, weights, output_path, height):
     prod['to_review'] = False
     prod.to_csv(f'status_{pc_number}.csv', index=False)
 
-    for i, row in prod.iloc[6:].iterrows():
-        content_img_path = content_path / row['content']
-        style_img_path = style_path / row['style']
+    for i, row in prod.iterrows():
         weight = row['weight']
         index = str(row['index'])
 
@@ -84,7 +82,12 @@ def run(pc_number, weights, output_path, height):
         print(f"Processing output name: {index}")
         
         configs = prepare_configs(row['content'], row['style'], index, weight, output_path, height)
-        result = main(configs)
+
+        try:
+            result = main(configs)
+        except:
+            print(f"Algorithm crashed, check logs")
+            result = False
         
         if result is True:
             print('Successful execution')
