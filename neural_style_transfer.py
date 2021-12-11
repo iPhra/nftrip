@@ -243,7 +243,7 @@ if __name__ == "__main__":
     #
     parser = argparse.ArgumentParser()
     parser.add_argument("--content_img_name", type=str, help="content image name", default='mona_lisa.jpeg')
-    parser.add_argument("--style_img_name", type=str, help="style image name", default='mosaic.jpeg')
+    parser.add_argument("--style_img_name", type=str, help="style image name", default='udnie.jpg')
     parser.add_argument("--output_img_name", type=str, help="output image name", default='test.jpg')
     parser.add_argument("--output_path", type=str, help='output path', default='output')
     parser.add_argument("--height", type=int, nargs='+', help="height of content and style images", default=500)

@@ -34,8 +34,6 @@ def prepare_configs(content, style, output, weight, output_path, height):
 
 def run(pc_number, weights, output_path, height):
     root_path = Path('./data/')
-    content_path = root_path / 'content-images'
-    style_path = root_path / 'style-images'
     metadata_path = root_path / 'output' / 'metadata'
     metadata_path.mkdir(exist_ok=True, parents=True)
     
@@ -66,7 +64,7 @@ def run(pc_number, weights, output_path, height):
     prod['to_review'] = False
     prod.to_csv(f'status_{pc_number}.csv', index=False)
 
-    for i, row in prod.iterrows():
+    for i, row in prod.iloc[6:].iterrows():
         weight = row['weight']
         index = str(row['index'])
 
@@ -82,11 +80,11 @@ def run(pc_number, weights, output_path, height):
         print(f"Processing output name: {index}")
         
         configs = prepare_configs(row['content'], row['style'], index, weight, output_path, height)
-
+        
         try:
             result = main(configs)
         except:
-            print(f"Algorithm crashed, check logs")
+            print("Execution failed for current image")
             result = False
         
         if result is True:
@@ -95,28 +93,28 @@ def run(pc_number, weights, output_path, height):
             metadata = {
                 "description": "The most iconic pieces of art, reimagined by AI.",
                 "image": "TBD",
-                "name" : f"{content['Title']} X {style['Title']}",
+                "name" : f"{content.iloc[0]['Title']} X {style.iloc[0]['Title']}",
                 "animation_url": "TBD",
                 "attributes": [
                     {
                         "trait_type": "Content",
-                        "value": content['Title'].iloc[0]
+                        "value": content.iloc[0]['Title']
                     },
                     {
                         "trait_type": "Content Author",
-                        "value": content['Author'].iloc[0]
+                        "value": content.iloc[0]['Author']
                     },
                     {
                         "trait_type": "Style",
-                        "value": style['Title'].iloc[0]
+                        "value": style.iloc[0]['Title']
                     },
                     {
                         "trait_type": "Style Author",
-                        "value": style['Author'].iloc[0]
+                        "value": style.iloc[0]['Author']
                     },
                     {
                         "trait_type": "Orientation",
-                        "value": content['Orientation'].iloc[0]
+                        "value": content.iloc[0]['Orientation']
                     },
                     {
                         "trait_type": "File Name",
