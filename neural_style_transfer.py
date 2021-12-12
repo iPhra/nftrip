@@ -168,7 +168,7 @@ def make_gif(config, results_path):
     orig = orig.resize((transf.width,transf.height), Image.ANTIALIAS)
 
     images = []
-    for i in range(0, 255, 20):
+    for i in range(0, 255, 15):
         orig_new = orig.copy()
         orig_new.putalpha(255-i)
 
@@ -179,7 +179,7 @@ def make_gif(config, results_path):
         images.append(new)
 
     images = images + images[::-1]
-    imageio.mimsave(f'{results_path}/out.gif', images, duration=0.02)
+    imageio.mimsave(f'{results_path}/out.gif', images, duration=0.01)
 
 
 def copy_output(optimization_config, results_path):
@@ -197,6 +197,9 @@ def copy_output(optimization_config, results_path):
     destination_video_file = optimization_config['gifs_path'] / ('g' + destination_filename + '.gif')
     logger.info(f'Copying to {destination_video_file}')
     shutil.copy(source_gif_filename, destination_video_file)
+
+    shutil.rmtree(results_path, ignore_errors=True)
+
 
     
 def main(optimization_config):
