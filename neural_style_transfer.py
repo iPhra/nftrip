@@ -210,7 +210,7 @@ def copy_output(optimization_config, results_path):
 def main(optimization_config):
     start = time()
 
-    default_resource_dir = Path(os.path.dirname(__file__)) /  'data'
+    default_resource_dir = Path(os.path.dirname(__file__)) / 'data'
     content_images_dir = default_resource_dir / 'content-images'
     style_images_dir = default_resource_dir / 'style-images'
     output_img_dir = default_resource_dir / 'output-images'

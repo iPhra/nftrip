@@ -23,7 +23,7 @@ def prepare_configs(content, style, output, weight, output_path, height):
         'content_weight': 1e5,
         'style_weight': weight,
         'tv_weight': 1e0,
-        'optimizer': 'lbfgs',
+        'optimizer': 'adam',
         'model': 'vgg19',
         'init_method': 'content',
         'saving_freq': 50
