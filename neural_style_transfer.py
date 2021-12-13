@@ -117,13 +117,16 @@ def neural_style_transfer(config):
     #
     unsuccessful=False
     if config['optimizer'] == 'adam':
-        optimizer = Adam((optimizing_img,), lr=1e1)
-        tuning_step = make_tuning_step(neural_net, optimizer, target_representations, content_feature_maps_index_name[0], style_feature_maps_indices_names[0], config)
-        for cnt in range(num_of_iterations[config['optimizer']]):
-            total_loss, content_loss, style_loss, tv_loss = tuning_step(optimizing_img)
-            with torch.no_grad():
-                #logger.debug(f'Adam | iteration: {cnt:03}, total loss={total_loss.item():12.4f}, content_loss={config["content_weight"] * content_loss.item():12.4f}, style loss={config["style_weight"] * style_loss.item():12.4f}, tv loss={config["tv_weight"] * tv_loss.item():12.4f}')
-                utils.save_and_maybe_display(optimizing_img, dump_path, config, cnt, num_of_iterations[config['optimizer']], should_display=False)
+        try:
+            optimizer = Adam((optimizing_img,), lr=1e1)
+            tuning_step = make_tuning_step(neural_net, optimizer, target_representations, content_feature_maps_index_name[0], style_feature_maps_indices_names[0], config)
+            for cnt in range(num_of_iterations[config['optimizer']]):
+                total_loss, content_loss, style_loss, tv_loss = tuning_step(optimizing_img)
+                with torch.no_grad():
+                    #logger.debug(f'Adam | iteration: {cnt:03}, total loss={total_loss.item():12.4f}, content_loss={config["content_weight"] * content_loss.item():12.4f}, style loss={config["style_weight"] * style_loss.item():12.4f}, tv loss={config["tv_weight"] * tv_loss.item():12.4f}')
+                    utils.save_and_maybe_display(optimizing_img, dump_path, config, cnt, num_of_iterations[config['optimizer']], should_display=False)
+        except:
+            unsuccessful = True
     elif config['optimizer'] == 'lbfgs':
         try:
             # line_search_fn does not seem to have significant impact on result
