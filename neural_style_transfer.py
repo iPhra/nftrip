@@ -117,6 +117,7 @@ def neural_style_transfer(config):
     #
     unsuccessful=False
     if config['optimizer'] == 'adam':
+        logger.info('Using ADAM')
         try:
             optimizer = Adam((optimizing_img,), lr=1e1)
             tuning_step = make_tuning_step(neural_net, optimizer, target_representations, content_feature_maps_index_name[0], style_feature_maps_indices_names[0], config)
@@ -128,6 +129,7 @@ def neural_style_transfer(config):
         except:
             unsuccessful = True
     elif config['optimizer'] == 'lbfgs':
+        logger.info('Using LBFGS')
         try:
             # line_search_fn does not seem to have significant impact on result
             optimizer = LBFGS((optimizing_img,), max_iter=num_of_iterations['lbfgs'], line_search_fn='strong_wolfe')

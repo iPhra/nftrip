@@ -64,7 +64,7 @@ def run(pc_number, weights, output_path, height):
     prod['to_review'] = False
     prod.to_csv(f'status_{pc_number}.csv', index=False)
 
-    for i, row in prod.iloc[6:].iterrows():
+    for i, row in prod.iterrows():
         weight = row['weight']
         index = str(row['index'])
 
