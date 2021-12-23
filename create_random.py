@@ -3,11 +3,8 @@ from pathlib import Path
 import json
 import argparse
 import numpy as np
-from locale import atof, setlocale, LC_NUMERIC
 
 from neural_style_transfer import main
-
-setlocale(LC_NUMERIC, 'it_IT')
 
 
 def prepare_configs(content, style, output, weight, output_path, height):
@@ -45,7 +42,7 @@ def parse_matrix(root_path):
     df.dropna(how='all', axis=1, inplace=True)
 
     # Convert all numbers to float
-    df = df.applymap(lambda x: atof(x))
+    df = df.applymap(lambda x: float(x.replace(',','.')))
     
     return df
 
