@@ -26,7 +26,7 @@ def prepare_configs(content, style, output, weight, output_path, height):
         'optimizer': 'adam',
         'model': 'vgg19',
         'init_method': 'content',
-        'saving_freq': 50
+        'saving_freq': -1
     }
     
     return configs
