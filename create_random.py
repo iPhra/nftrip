@@ -100,28 +100,28 @@ def run(n_random, output_path, height):
             metadata = {
                 "description": "The most iconic pieces of art, reimagined by AI.",
                 "image": "TBD",
-                "name" : f"{content.iloc[0]['Title']} X {style.iloc[0]['Title']}",
+                "name" : f"{content['Title']} X {style['Title']}",
                 "animation_url": "TBD",
                 "attributes": [
                     {
                         "trait_type": "Content",
-                        "value": content.iloc[0]['Title']
+                        "value": content['Title']
                     },
                     {
                         "trait_type": "Content Author",
-                        "value": content.iloc[0]['Author']
+                        "value": content['Author']
                     },
                     {
                         "trait_type": "Style",
-                        "value": style.iloc[0]['Title']
+                        "value": style['Title']
                     },
                     {
                         "trait_type": "Style Author",
-                        "value": style.iloc[0]['Author']
+                        "value": style['Author']
                     },
                     {
                         "trait_type": "Orientation",
-                        "value": content.iloc[0]['Orientation']
+                        "value": content['Orientation']
                     },
                     {
                         "trait_type": "File Name",
