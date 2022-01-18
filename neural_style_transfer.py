@@ -108,7 +108,7 @@ def neural_style_transfer(config):
 
     # magic numbers in general are a big no no - some things in this code are left like this by design to avoid clutter
     num_of_iterations = {
-        "lbfgs": 1000, #1000,
+        "lbfgs": 1000,
         "adam": 1000,
     }
 
@@ -250,17 +250,17 @@ if __name__ == "__main__":
     # sorted so that the ones on the top are more likely to be changed than the ones on the bottom
     #
     parser = argparse.ArgumentParser()
-    parser.add_argument("--content_img_name", type=str, help="content image name", default='mona_lisa.jpeg')
-    parser.add_argument("--style_img_name", type=str, help="style image name", default='udnie.jpg')
+    parser.add_argument("--content_img_name", type=str, help="content image name", default='adamo.jpg')
+    parser.add_argument("--style_img_name", type=str, help="style image name", default='birds.jpg')
     parser.add_argument("--output_img_name", type=str, help="output image name", default='test.jpg')
     parser.add_argument("--output_path", type=str, help='output path', default='output')
-    parser.add_argument("--height", type=int, nargs='+', help="height of content and style images", default=500)
+    parser.add_argument("--height", type=int, nargs='+', help="height of content and style images", default=400)
 
     parser.add_argument("--content_weight", type=float, help="weight factor for content loss", default=1e5)
-    parser.add_argument("--style_weight", type=float, help="weight factor for style loss", default=6e4)
+    parser.add_argument("--style_weight", type=float, help="weight factor for style loss", default=3e4)
     parser.add_argument("--tv_weight", type=float, help="weight factor for total variation loss", default=1e0)
 
-    parser.add_argument("--optimizer", type=str, choices=['lbfgs', 'adam'], default='adam')
+    parser.add_argument("--optimizer", type=str, choices=['lbfgs', 'adam'], default='lbfgs')
     parser.add_argument("--model", type=str, choices=['vgg16', 'vgg19'], default='vgg19')
     parser.add_argument("--init_method", type=str, choices=['random', 'content', 'style'], default='content')
     parser.add_argument("--saving_freq", type=int, help="saving frequency for intermediate images (-1 means only final)", default=-1)

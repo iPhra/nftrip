@@ -4,7 +4,7 @@ import json
 import argparse
 import numpy as np
 
-from neural_style_transfer import main
+from ..neural_style_transfer import main
 
 
 def prepare_configs(content, style, output, weight, output_path, height):
@@ -47,12 +47,13 @@ def parse_matrix(root_path):
     return df
 
 
-def run(n_random, output_path, height):
+def run(n_random, output_path, height, content_name=None, style_name=None, prefix=None):
     root_path = Path('./data/')
     metadata_path = root_path / 'output' / 'metadata'
     metadata_path.mkdir(exist_ok=True, parents=True)
     
-    df = parse_matrix(root_path)
+    #df = parse_matrix(root_path)
+    df = None
     
     style_df = pd.read_csv(root_path / 'metadata' / 'style.csv')
     style_df = style_df[~style_df['File_name'].isna()]
@@ -71,21 +72,33 @@ def run(n_random, output_path, height):
     metadata_path.mkdir(exist_ok=True, parents=True)
     
     for i, (content_id, style_id) in enumerate(zip(content_indices, style_indices)):
-        index = f'random_{i}'
+        if prefix is None:
+            index = f'random_3_{i}'
+        else:
+            index = f'{prefix}_{i}'
         
-        content = content_df.iloc[content_id]
-        style = style_df.iloc[style_id]
+        if content_name is None:
+            print('Using random content')
+            content = content_df.iloc[content_id]
+        else:
+            content = content_df[content_df['File_name']==content_name].iloc[0]
+        
+        if style_name is None:
+            print('Using random style')
+            style = style_df.iloc[style_id]
+        else:
+            style = style_df[style_df['File_name']==style_name].iloc[0]
 
         try:
             weight = df.loc[content['File_name'],style['File_name']]
         except:
-            weight = 5e4
+            weight = 5e5
         
         print(f"Processing content image: {content['File_name']}")
         print(f"Processing style: {style['File_name']}")
         print(f"Processing weight: {weight}")
         print(f"Processing output name: {index}")
-            
+
         configs = prepare_configs(content['File_name'], style['File_name'], index, weight, output_path, height)
         
         try:
@@ -151,8 +164,11 @@ def run(n_random, output_path, height):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--output_path", type=str, help='output path', default='output')
-    parser.add_argument("--height", type=int, nargs='+', help="height of content and style images", default=500)
+    parser.add_argument("--height", type=int, nargs='+', help="height of content and style images", default=1000)
     parser.add_argument("--random", type=int, nargs='+', help="number of random images", default=200)
+    parser.add_argument("--content", type=str, nargs='?', help='content image to use', default=None)
+    parser.add_argument("--style", type=str, nargs='?', help='style image to use', default=None)
+    parser.add_argument("--prefix", type=str, nargs='?', help='prefix for the name',default=None)
     args = parser.parse_args()
     
-    run(args.random, args.output_path, args.height)
+    run(args.random, args.output_path, args.height, args.content, args.style, args.prefix)
