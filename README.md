@@ -2,7 +2,7 @@
 
 1. Open Anaconda Prompt and navigate into project directory `cd path_to_repo`
 2. Run `conda env create` (while in project directory)
-3. Run `activate pytorch-nst`
+3. Run `conda activate nftrip`
 
 That's it! It should work out-of-the-box executing environment.yml file which deals with dependencies.
 
