@@ -16,4 +16,4 @@ dependencies:
 - boto3
 - pip:
   - numpy==1.18.1
-  - opencv-python-contrib
+  - opencv-python
