@@ -287,7 +287,7 @@ def main(optimization_config):
     if optimization_config["gif"]:
         make_gif(optimization_config, images_path)
 
-    if upscale_factor := optimization_config["upscale"] is not None:
+    if (upscale_factor := optimization_config["upscale"]) is not None:
         upscaler = Upscaler(upscale_factor)
         upscaler(images_path)
 
@@ -340,7 +340,7 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--optimizer", type=str, choices=["lbfgs", "adam"], default="adam"
+        "--optimizer", type=str, choices=["lbfgs", "adam"], default="lbfgs"
     )
     parser.add_argument(
         "--model", type=str, choices=["vgg16", "vgg19"], default="vgg19"
