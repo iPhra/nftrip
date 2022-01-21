@@ -4,9 +4,12 @@ import torch
 from torchvision import transforms
 import os
 import matplotlib.pyplot as plt
-
+import shutil
+import logging
 
 from models.definitions.vgg_nets import Vgg16, Vgg19, Vgg16Experimental
+
+logger = logging.getLogger(__name__)
 
 
 IMAGENET_MEAN_255 = [123.675, 116.28, 103.53]
@@ -16,7 +19,6 @@ IMAGENET_STD_NEUTRAL = [1, 1, 1]
 #
 # Image manipulation util functions
 #
-
 def load_image(img_path, target_shape=None):
     if not os.path.exists(img_path):
         raise Exception(f'Path does not exist: {img_path}')
@@ -98,11 +100,6 @@ def get_uint8_range(x):
         raise ValueError(f'Expected numpy array got {type(x)}')
 
 
-#
-# End of image manipulation util functions
-#
-
-
 # initially it takes some time for PyTorch to download the models into local cache
 def prepare_model(model, device):
     # we are not tuning model weights -> we are only tuning optimizing_img's pixels! (that's why requires_grad=False)
@@ -140,3 +137,25 @@ def gram_matrix(x, should_normalize=True):
 def total_variation(y):
     return torch.sum(torch.abs(y[:, :, :, :-1] - y[:, :, :, 1:])) + \
            torch.sum(torch.abs(y[:, :, :-1, :] - y[:, :, 1:, :]))
+
+
+def copy_output(optimization_config, results_path):
+    optimization_config['images_path'].mkdir(exist_ok=True, parents=True)
+    optimization_config['gifs_path'].mkdir(exist_ok=True, parents=True)
+    destination_filename = optimization_config['output_img_name'].split('.')[0]
+
+    source_img_filename = sorted(list(results_path.glob('*.png')))[-1]
+    logger.info(f'Copying {source_img_filename}')
+    destination_img_file = optimization_config['images_path'] / (
+        destination_filename + '.png')
+    shutil.copy(source_img_filename, destination_img_file)
+
+    if optimization_config['gif']:
+        source_gif_filename = list(results_path.glob('*.gif'))[0]
+        logger.info(f'Copying {source_gif_filename}')
+        destination_video_file = optimization_config['gifs_path'] / (
+            'g' + destination_filename + '.gif')
+        logger.info(f'Copying to {destination_video_file}')
+        shutil.copy(source_gif_filename, destination_video_file)
+
+    shutil.rmtree(results_path, ignore_errors=True)
