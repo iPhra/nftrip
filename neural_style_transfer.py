@@ -26,42 +26,43 @@ logger = logging.getLogger(__name__)
 
 
 def copy_output(optimization_config, results_path):
-    optimization_config['images_path'].mkdir(exist_ok=True, parents=True)
-    optimization_config['gifs_path'].mkdir(exist_ok=True, parents=True)
-    destination_filename = optimization_config['output_img_name'].split('.')[0]
+    optimization_config["images_path"].mkdir(exist_ok=True, parents=True)
+    optimization_config["gifs_path"].mkdir(exist_ok=True, parents=True)
+    destination_filename = optimization_config["output_img_name"].split(".")[0]
 
-    source_img_filename = sorted(list(results_path.glob('*.png')))[-1]
-    logger.info(f'Copying {source_img_filename}')
-    destination_img_file = optimization_config['images_path'] / (
-        destination_filename + '.png')
+    source_img_filename = sorted(list(results_path.glob("*.png")))[-1]
+    logger.info(f"Copying {source_img_filename}")
+    destination_img_file = optimization_config["images_path"] / (
+        destination_filename + ".png"
+    )
     shutil.copy(source_img_filename, destination_img_file)
 
-    if optimization_config['gif']:
-        source_gif_filename = list(results_path.glob('*.gif'))[0]
-        logger.info(f'Copying {source_gif_filename}')
-        destination_video_file = optimization_config['gifs_path'] / (
-            'g' + destination_filename + '.gif')
-        logger.info(f'Copying to {destination_video_file}')
+    if optimization_config["gif"]:
+        source_gif_filename = list(results_path.glob("*.gif"))[0]
+        logger.info(f"Copying {source_gif_filename}")
+        destination_video_file = optimization_config["gifs_path"] / (
+            "g" + destination_filename + ".gif"
+        )
+        logger.info(f"Copying to {destination_video_file}")
         shutil.copy(source_gif_filename, destination_video_file)
 
     shutil.rmtree(results_path, ignore_errors=True)
 
 
 def make_gif(config, results_path):
-    logger.info('Creating gif..')
+    logger.info("Creating gif..")
 
-    results = list(sorted(results_path.glob('*.png')))[-1]
+    results = list(sorted(results_path.glob("*.png")))[-1]
     transf = Image.open(results)
 
-    content_img_path = config['content_images_dir'] / \
-        config['content_img_name']
+    content_img_path = config["content_images_dir"] / config["content_img_name"]
     orig = Image.open(content_img_path)
     orig = orig.resize((transf.width, transf.height), Image.ANTIALIAS)
 
     images = []
     for i in range(0, 255, 15):
         orig_new = orig.copy()
-        orig_new.putalpha(255-i)
+        orig_new.putalpha(255 - i)
 
         transf_new = transf.copy()
         transf_new.putalpha(i)
@@ -70,7 +71,7 @@ def make_gif(config, results_path):
         images.append(new)
 
     images = images + images[::-1]
-    imageio.mimsave(f'{results_path}/out.gif', images, duration=0.01)
+    imageio.mimsave(f"{results_path}/out.gif", images, duration=0.01)
 
 
 def main(optimization_config):
@@ -96,7 +97,7 @@ def main(optimization_config):
 
     logger.debug(optimization_config)
 
-    if optimization_config['model'] == 'original':
+    if optimization_config["algorithm"] == "original":
         model = Original(optimization_config)
         images_path = model.predict()
     else:
@@ -138,7 +139,7 @@ if __name__ == "__main__":
         type=int,
         nargs="+",
         help="height of content and style images",
-        default=400,
+        default=500,
     )
 
     parser.add_argument(
@@ -157,7 +158,11 @@ if __name__ == "__main__":
         default=1e0,
     )
     parser.add_argument(
-        "--model", type=int, choices=["original"], help="Neural Style Transfer model", default="original"
+        "--algorithm",
+        type=str,
+        choices=["original"],
+        help="Neural Style Transfer model",
+        default="original",
     )
 
     parser.add_argument(

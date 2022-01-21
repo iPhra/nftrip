@@ -79,14 +79,13 @@ class Original:
             suffix = f'_o_{self.optimizer}_i_{self.config["init_method"]}_h_{str(self.height)}_m_{self.config["model"]}_cw_{self.config["content_weight"]}_sw_{self.config["style_weight"]}_tv_{self.config["tv_weight"]}{self.config["img_format"][1]}'
         return prefix + suffix
 
-
-    def save_and_maybe_display(self, optimizing_img, dump_path, img_id, num_of_iterations, should_display=False):
+    def save_and_maybe_display(self, optimizing_img, dump_path, img_id, should_display=False):
         saving_freq = self.config['saving_freq']
         out_img = optimizing_img.squeeze(axis=0).to('cpu').detach().numpy()
         out_img = np.moveaxis(out_img, 0, 2)  # swap channel from 1st to 3rd position: ch, _, _ -> _, _, chr
 
         # for saving_freq == -1 save only the final result (otherwise save with frequency saving_freq and save the last pic)
-        if img_id == num_of_iterations-1 or (saving_freq > 0 and img_id % saving_freq == 0) or ((saving_freq > 0) and (img_id<20)):
+        if img_id == self.iterations-1 or (saving_freq > 0 and img_id % saving_freq == 0) or ((saving_freq > 0) and (img_id<20)):
             img_format = self.config['img_format']
             out_img_name = str(img_id).zfill(img_format[0]) + img_format[1] if saving_freq != -1 else self.generate_out_img_name()
             dump_img = np.copy(out_img)
@@ -188,7 +187,6 @@ class Original:
 
         return total_loss, content_loss, style_loss, tv_loss
 
-
     def make_tuning_step(
         self,
         neural_net,
@@ -215,7 +213,6 @@ class Original:
 
         # Returns the function that will be called inside the tuning loop
         return tuning_step
-
 
     def predict(self):
         logger.info("Starting prediction")
@@ -300,12 +297,11 @@ class Original:
                         self.save_and_maybe_display(
                             optimizing_img,
                             dump_path,
-                            self.config,
                             cnt,
-                            self.ITERATIONS[["optimizer"]],
                             should_display=False,
                         )
-            except:
+            except Exception as e:
+                logger.exception(e)
                 unsuccessful = True
 
         elif self.optimizer == "lbfgs":
@@ -337,9 +333,7 @@ class Original:
                         self.save_and_maybe_display(
                             optimizing_img,
                             dump_path,
-                            self.config,
                             cnt,
-                            self.iterations,
                             should_display=False,
                         )
 
@@ -347,7 +341,8 @@ class Original:
                     return total_loss
 
                 optimizer.step(closure)
-            except:
+            except Exception as e:
+                logger.exception(e)
                 unsuccessful = True
 
         logger.debug(f"Executed {cnt} iterations")
