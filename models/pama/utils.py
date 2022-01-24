@@ -7,7 +7,7 @@ import torch.utils.data as data
 from torchvision import transforms
 import PIL.Image as Image
 
-DEVICE = 'cpu'
+DEVICE = 'cuda'
 mse = nn.MSELoss()
 
 
