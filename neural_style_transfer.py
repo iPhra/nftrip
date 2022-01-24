@@ -9,7 +9,7 @@ from time import time
 import imageio
 from PIL import Image
 
-from models.original import Original
+from models import Original, PAMA 
 from utils.upscale import ESRGANUpscale as Upscaler
 
 logs_folder = Path("logs")
@@ -99,9 +99,11 @@ def main(optimization_config):
 
     if optimization_config["algorithm"] == "original":
         model = Original(optimization_config)
-        images_path = model.predict()
+    elif optimization_config["algorithm"] == "pama":
+        model = PAMA(optimization_config)
     else:
         raise ValueError("Invalid algorithm provided")
+    images_path = model.predict()
 
     if optimization_config["gif"]:
         make_gif(optimization_config, images_path)
@@ -128,7 +130,7 @@ if __name__ == "__main__":
         "--content_img_name", type=str, help="content image name", default="adamo.jpg"
     )
     parser.add_argument(
-        "--style_img_name", type=str, help="style image name", default="birds.jpg"
+        "--style_img_name", type=str, help="style image name", default="yellow_accompaniment.jpg"
     )
     parser.add_argument(
         "--output_img_name", type=str, help="output image name", default="test.png"
@@ -160,7 +162,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--algorithm",
         type=str,
-        choices=["original"],
+        choices=["original", "pama"],
         help="Neural Style Transfer model",
         default="original",
     )

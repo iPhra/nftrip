@@ -31,6 +31,17 @@ class Original:
         self.optimizer = config["optimizer"]
         self.height = config["height"]
         self.iterations = ITERATIONS_DICT[self.optimizer]
+        out_dir_name = (
+            "combined_"
+            + os.path.split(self.content_img_path)[1].split(".")[0]
+            + "_"
+            + os.path.split(self.style_img_path)[1].split(".")[0]
+        )
+        self.dump_path = self.config["output_img_dir"] / out_dir_name
+        self.dump_path.mkdir(exist_ok=True, parents=True)
+
+        # remove all files in the folder
+        [f.unlink() for f in self.dump_path.glob("*") if f.is_file()]
 
     def load_image(self, img_path, target_shape=None):
         if not os.path.exists(img_path):
@@ -77,15 +88,7 @@ class Original:
         img = transform(img).to(device).unsqueeze(0)
 
         return img
-
-    @staticmethod
-    def save_image(img, img_path):
-        if len(img.shape) == 2:
-            img = np.stack((img,) * 3, axis=-1)
-        cv.imwrite(
-            img_path, img[:, :, ::-1]
-        )  # [:, :, ::-1] converts rgb into bgr (opencv contraint...)
-
+        
     def generate_out_img_name(self):
         prefix = (
             os.path.basename(self.config["content_img_name"]).split(".")[0]
@@ -253,18 +256,6 @@ class Original:
     def predict(self):
         logger.info("Starting prediction")
 
-        out_dir_name = (
-            "combined_"
-            + os.path.split(self.content_img_path)[1].split(".")[0]
-            + "_"
-            + os.path.split(self.style_img_path)[1].split(".")[0]
-        )
-        dump_path = self.config["output_img_dir"] / out_dir_name
-        dump_path.mkdir(exist_ok=True, parents=True)
-
-        # remove all files in the folder
-        [f.unlink() for f in dump_path.glob("*") if f.is_file()]
-
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         logger.debug(f"Using device {device} for training")
 
@@ -332,7 +323,7 @@ class Original:
                     with torch.no_grad():
                         self.save_and_maybe_display(
                             optimizing_img,
-                            dump_path,
+                            self.dump_path,
                             cnt,
                             should_display=False,
                         )
@@ -367,7 +358,7 @@ class Original:
                     with torch.no_grad():
                         self.save_and_maybe_display(
                             optimizing_img,
-                            dump_path,
+                            self.dump_path,
                             cnt,
                             should_display=False,
                         )
@@ -388,4 +379,4 @@ class Original:
             return self.predict()
 
         logger.info("Training finished")
-        return dump_path
+        return self.dump_path
