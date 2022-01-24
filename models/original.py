@@ -24,25 +24,37 @@ ITERATIONS_DICT = {
 class Original:
     def __init__(self, config):
         self.config = config
-        self.content_img_path = config["content_images_dir"] / config["content_img_name"]
+        self.content_img_path = (
+            config["content_images_dir"] / config["content_img_name"]
+        )
         self.style_img_path = config["style_images_dir"] / config["style_img_name"]
-        self.optimizer = config['optimizer']
-        self.height = config['height']
+        self.optimizer = config["optimizer"]
+        self.height = config["height"]
         self.iterations = ITERATIONS_DICT[self.optimizer]
-    
+
     def load_image(self, img_path, target_shape=None):
         if not os.path.exists(img_path):
-            raise Exception(f'Path does not exist: {img_path}')
-        img = cv.imread(img_path)[:, :, ::-1]  # [:, :, ::-1] converts BGR (opencv format...) into RGB
+            raise Exception(f"Path does not exist: {img_path}")
+        img = cv.imread(img_path)[
+            :, :, ::-1
+        ]  # [:, :, ::-1] converts BGR (opencv format...) into RGB
 
         if target_shape is not None:  # resize section
-            if isinstance(target_shape, int) and target_shape != -1:  # scalar -> implicitly setting the height
+            if (
+                isinstance(target_shape, int) and target_shape != -1
+            ):  # scalar -> implicitly setting the height
                 current_height, current_width = img.shape[:2]
                 new_height = target_shape
                 new_width = int(current_width * (new_height / current_height))
-                img = cv.resize(img, (new_width, new_height), interpolation=cv.INTER_CUBIC)
+                img = cv.resize(
+                    img, (new_width, new_height), interpolation=cv.INTER_CUBIC
+                )
             else:  # set both dimensions to target shape
-                img = cv.resize(img, (target_shape[1], target_shape[0]), interpolation=cv.INTER_CUBIC)
+                img = cv.resize(
+                    img,
+                    (target_shape[1], target_shape[0]),
+                    interpolation=cv.INTER_CUBIC,
+                )
 
         # this need to go after resizing - otherwise cv.resize will push values outside of [0,1] range
         img = img.astype(np.float32)  # convert from uint8 to float32
@@ -54,11 +66,13 @@ class Original:
 
         # normalize using ImageNet's mean
         # [0, 255] range worked much better for me than [0, 1] range (even though PyTorch models were trained on latter)
-        transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Lambda(lambda x: x.mul(255)),
-            transforms.Normalize(mean=IMAGENET_MEAN_255, std=IMAGENET_STD_NEUTRAL)
-        ])
+        transform = transforms.Compose(
+            [
+                transforms.ToTensor(),
+                transforms.Lambda(lambda x: x.mul(255)),
+                transforms.Normalize(mean=IMAGENET_MEAN_255, std=IMAGENET_STD_NEUTRAL),
+            ]
+        )
 
         img = transform(img).to(device).unsqueeze(0)
 
@@ -68,29 +82,47 @@ class Original:
     def save_image(img, img_path):
         if len(img.shape) == 2:
             img = np.stack((img,) * 3, axis=-1)
-        cv.imwrite(img_path, img[:, :, ::-1])  # [:, :, ::-1] converts rgb into bgr (opencv contraint...)
+        cv.imwrite(
+            img_path, img[:, :, ::-1]
+        )  # [:, :, ::-1] converts rgb into bgr (opencv contraint...)
 
     def generate_out_img_name(self):
-        prefix = os.path.basename(self.config['content_img_name']).split('.')[0] + '_' + os.path.basename(self.config['style_img_name']).split('.')[0]
+        prefix = (
+            os.path.basename(self.config["content_img_name"]).split(".")[0]
+            + "_"
+            + os.path.basename(self.config["style_img_name"]).split(".")[0]
+        )
         # called from the reconstruction script
-        if 'reconstruct_script' in self.config:
+        if "reconstruct_script" in self.config:
             suffix = f'_o_{self.optimizer}_h_{str(self.height)}_m_{self.config["model"]}{self.onfig["img_format"][1]}'
         else:
             suffix = f'_o_{self.optimizer}_i_{self.config["init_method"]}_h_{str(self.height)}_m_{self.config["model"]}_cw_{self.config["content_weight"]}_sw_{self.config["style_weight"]}_tv_{self.config["tv_weight"]}{self.config["img_format"][1]}'
         return prefix + suffix
 
-    def save_and_maybe_display(self, optimizing_img, dump_path, img_id, should_display=False):
-        saving_freq = self.config['saving_freq']
-        out_img = optimizing_img.squeeze(axis=0).to('cpu').detach().numpy()
-        out_img = np.moveaxis(out_img, 0, 2)  # swap channel from 1st to 3rd position: ch, _, _ -> _, _, chr
+    def save_and_maybe_display(
+        self, optimizing_img, dump_path, img_id, should_display=False
+    ):
+        saving_freq = self.config["saving_freq"]
+        out_img = optimizing_img.squeeze(axis=0).to("cpu").detach().numpy()
+        out_img = np.moveaxis(
+            out_img, 0, 2
+        )  # swap channel from 1st to 3rd position: ch, _, _ -> _, _, chr
 
         # for saving_freq == -1 save only the final result (otherwise save with frequency saving_freq and save the last pic)
-        if img_id == self.iterations-1 or (saving_freq > 0 and img_id % saving_freq == 0) or ((saving_freq > 0) and (img_id<20)):
-            img_format = self.config['img_format']
-            out_img_name = str(img_id).zfill(img_format[0]) + img_format[1] if saving_freq != -1 else self.generate_out_img_name()
+        if (
+            img_id == self.iterations - 1
+            or (saving_freq > 0 and img_id % saving_freq == 0)
+            or ((saving_freq > 0) and (img_id < 20))
+        ):
+            img_format = self.config["img_format"]
+            out_img_name = (
+                str(img_id).zfill(img_format[0]) + img_format[1]
+                if saving_freq != -1
+                else self.generate_out_img_name()
+            )
             dump_img = np.copy(out_img)
             dump_img += np.array(IMAGENET_MEAN_255).reshape((1, 1, 3))
-            dump_img = np.clip(dump_img, 0, 255).astype('uint8')
+            dump_img = np.clip(dump_img, 0, 255).astype("uint8")
             cv.imwrite(os.path.join(dump_path, out_img_name), dump_img[:, :, ::-1])
 
         if should_display:
@@ -105,28 +137,31 @@ class Original:
             x *= 255
             return x
         else:
-            raise ValueError(f'Expected numpy array got {type(x)}')
+            raise ValueError(f"Expected numpy array got {type(x)}")
 
     @staticmethod
     def prepare_model(model, device):
         # we are not tuning model weights -> we are only tuning optimizing_img's pixels! (that's why requires_grad=False)
         experimental = False
-        if model == 'vgg16':
+        if model == "vgg16":
             if experimental:
                 # much more flexible for experimenting with different style representations
                 model = Vgg16Experimental(requires_grad=False, show_progress=True)
             else:
                 model = Vgg16(requires_grad=False, show_progress=True)
-        elif model == 'vgg19':
+        elif model == "vgg19":
             model = Vgg19(requires_grad=False, show_progress=True)
         else:
-            raise ValueError(f'{model} not supported.')
+            raise ValueError(f"{model} not supported.")
 
         content_feature_maps_index = model.content_feature_maps_index
         style_feature_maps_indices = model.style_feature_maps_indices
         layer_names = model.layer_names
 
-        content_fms_index_name = (content_feature_maps_index, layer_names[content_feature_maps_index])
+        content_fms_index_name = (
+            content_feature_maps_index,
+            layer_names[content_feature_maps_index],
+        )
         style_fms_indices_names = (style_feature_maps_indices, layer_names)
         return model.to(device).eval(), content_fms_index_name, style_fms_indices_names
 
@@ -142,8 +177,9 @@ class Original:
 
     @staticmethod
     def total_variation(y):
-        return torch.sum(torch.abs(y[:, :, :, :-1] - y[:, :, :, 1:])) + \
-            torch.sum(torch.abs(y[:, :, :-1, :] - y[:, :, 1:, :]))
+        return torch.sum(torch.abs(y[:, :, :, :-1] - y[:, :, :, 1:])) + torch.sum(
+            torch.abs(y[:, :, :-1, :] - y[:, :, 1:, :])
+        )
 
     def build_loss(
         self,
@@ -301,7 +337,7 @@ class Original:
                             should_display=False,
                         )
             except Exception as e:
-                logger.exception(e)
+                logger.info(e)
                 unsuccessful = True
 
         elif self.optimizer == "lbfgs":
@@ -329,7 +365,6 @@ class Original:
                     if total_loss.requires_grad:
                         total_loss.backward()
                     with torch.no_grad():
-                        # logger.debug(f'L-BFGS | iteration: {cnt:03}, total loss={total_loss.item():12.4f}, content_loss={config["content_weight"] * content_loss.item():12.4f}, style loss={config["style_weight"] * style_loss.item():12.4f}, tv loss={config["tv_weight"] * tv_loss.item():12.4f}')
                         self.save_and_maybe_display(
                             optimizing_img,
                             dump_path,
@@ -342,7 +377,7 @@ class Original:
 
                 optimizer.step(closure)
             except Exception as e:
-                logger.exception(e)
+                logger.info(e)
                 unsuccessful = True
 
         logger.debug(f"Executed {cnt} iterations")

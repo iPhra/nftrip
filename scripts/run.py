@@ -3,7 +3,7 @@ from pathlib import Path
 import json
 import argparse
 
-from ..neural_style_transfer import main
+from neural_style_transfer import main
 
 WEIGHTS = [5e2, 5e4]
 

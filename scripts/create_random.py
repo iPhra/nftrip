@@ -4,7 +4,7 @@ import json
 import argparse
 import numpy as np
 
-from ..neural_style_transfer import main
+from neural_style_transfer import main
 
 
 def prepare_configs(content, style, output, weight, output_path, height):
@@ -17,10 +17,11 @@ def prepare_configs(content, style, output, weight, output_path, height):
         'content_weight': 1e5,
         'style_weight': weight,
         'tv_weight': 1e0,
-        'optimizer': 'adam',
+        'optimizer': 'lbfgs',
         'model': 'vgg19',
         'init_method': 'content',
-        'saving_freq': -1
+        'saving_freq': -1,
+        'upscale': 2
     }
     
     return configs
@@ -92,7 +93,7 @@ def run(n_random, output_path, height, content_name=None, style_name=None, prefi
         try:
             weight = df.loc[content['File_name'],style['File_name']]
         except:
-            weight = 5e5
+            weight = 3e4
         
         print(f"Processing content image: {content['File_name']}")
         print(f"Processing style: {style['File_name']}")
@@ -164,7 +165,7 @@ def run(n_random, output_path, height, content_name=None, style_name=None, prefi
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--output_path", type=str, help='output path', default='output')
-    parser.add_argument("--height", type=int, nargs='+', help="height of content and style images", default=1000)
+    parser.add_argument("--height", type=int, nargs='+', help="height of content and style images", default=500)
     parser.add_argument("--random", type=int, nargs='+', help="number of random images", default=200)
     parser.add_argument("--content", type=str, nargs='?', help='content image to use', default=None)
     parser.add_argument("--style", type=str, nargs='?', help='style image to use', default=None)
