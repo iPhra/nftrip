@@ -108,8 +108,8 @@ def run(n_random, output_path, height, content_name=None, style_name=None, prefi
 
         try:
             result = main(configs)
-        except:
-            print("Execution failed for current image")
+        except Exception as e:
+            print(e)
             result = False
 
         if result is True:
