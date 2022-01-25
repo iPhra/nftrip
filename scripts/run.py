@@ -2,10 +2,14 @@ import pandas as pd
 from pathlib import Path
 import json
 import argparse
+from subprocess import run
+import shutil
 
 from neural_style_transfer import main
 
 WEIGHTS = [3e4]
+BUCKET_NAME = 'neuralism-assets'
+PREFIX = 'v2'
 
 
 def cartesian_product(d):
@@ -13,13 +17,13 @@ def cartesian_product(d):
     return pd.DataFrame(index=index).reset_index()
 
 
-def prepare_configs(content, style, output, weight, output_path, height):
+def prepare_configs(content, style, output, weight, output_path):
     configs = {
         "content_img_name": content,
         "style_img_name": style,
         "output_img_name": output,
         "output_path": output_path,
-        "height": height,
+        "height": 500,
         "content_weight": 1e5,
         "style_weight": weight,
         "tv_weight": 1e0,
@@ -35,10 +39,11 @@ def prepare_configs(content, style, output, weight, output_path, height):
     return configs
 
 
-def run(output_path, height):
+def run(output_path):
     root_path = Path('./data/')
-    metadata_path = root_path / 'output' / 'metadata'
+    metadata_path = root_path / output_path / 'metadata'
     metadata_path.mkdir(exist_ok=True, parents=True)
+    output_folder = root_path / output_path
     
     style_df = pd.read_csv(root_path / 'metadata' / 'style.csv')
     style_df = style_df[~style_df['File_name'].isna()]
@@ -67,11 +72,8 @@ def run(output_path, height):
         weight = row['weight']
         index = str(row['index'])
 
-        content = content_df.loc[content_df['File_name'] == row['content']]
-        style = style_df.loc[style_df['File_name'] == row['style']]
-        if (content.shape[0]>1) or (style.shape[0]>1):
-            print('Found more than one file with the given file_name')
-            prod.loc[i, 'to_review'] = True
+        content = content_df.loc[content_df['File_name'] == row['content']].iloc[0]
+        style = style_df.loc[style_df['File_name'] == row['style']].iloc[0]
 
         print(f"Processing content image: {row['content']}")
         print(f"Processing style: {row['style']}")
@@ -79,7 +81,7 @@ def run(output_path, height):
         print(f"Processing output name: {index}")
         
         configs = prepare_configs(
-            content["File_name"], style["File_name"], index, weight, output_path, height
+            content["File_name"], style["File_name"], index, weight, output_path
         )
 
         try:
@@ -103,7 +105,6 @@ def run(output_path, height):
                     {"trait_type": "Style Author", "value": style["Author"]},
                     {"trait_type": "Orientation", "value": content["Orientation"]},
                     {"trait_type": "File Name", "value": index},
-                    {"trait_type": "Style weight", "value": weight},
                 ],
             }
 
@@ -117,9 +118,12 @@ def run(output_path, height):
             print('Failed execution')
             prod.loc[i, 'done'] = 'failed'
             
-        # if i%100==0:
-        #     print('Saving snapshot to file')
-        #     prod.to_csv(f'status_{pc_number}.csv', index=False)
+        if i%1000==0:
+            print('Saving snapshot to file and syncing output')
+            prod.to_csv(f'status.csv', index=False)
+
+            run(f"aws s3 sync {output_folder} s3://{BUCKET_NAME}/{PREFIX}/output/")
+            shutil.rmtree(output_folder, ignore_errors=True)
 
         print('\n\n')
 
