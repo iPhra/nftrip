@@ -121,10 +121,6 @@ def main(optimization_config):
 
 
 if __name__ == "__main__":
-    #
-    # modifiable args - feel free to play with these (only small subset is exposed by design to avoid cluttering)
-    # sorted so that the ones on the top are more likely to be changed than the ones on the bottom
-    #
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--content_img_name", type=str, help="content image name", default="adamo.jpg"
